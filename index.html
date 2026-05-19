@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>企业利润与税负测算器 — 宇守信咨询</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif; background:#f0f2f5; color:#2d3436; padding-bottom:60px; }
+.header { background:linear-gradient(135deg,#92400e,#d97706); color:white; padding:32px 20px 24px; text-align:center; }
+.header h1 { font-size:22px; font-weight:700; margin-bottom:6px; }
+.header p { font-size:13px; opacity:0.85; }
+.header .badge { display:inline-block; background:rgba(255,255,255,0.2); border-radius:20px; padding:4px 14px; font-size:11px; margin-top:8px; }
+.tabs { display:flex; background:white; box-shadow:0 1px 4px rgba(0,0,0,0.08); position:sticky; top:0; z-index:10; }
+.tab { flex:1; text-align:center; padding:14px 0; font-size:14px; font-weight:500; color:#888; cursor:pointer; border-bottom:3px solid transparent; transition:all .2s; }
+.tab.active { color:#b45309; border-bottom-color:#b45309; }
+.panel { display:none; padding:16px; }
+.panel.active { display:block; }
+.card { background:white; border-radius:12px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.06); margin-bottom:12px; }
+.card-title { background:#f0f4ff; padding:10px 16px; font-size:13px; font-weight:600; color:#b45309; border-bottom:1px solid #e0e7ff; }
+.form-row { padding:10px 16px; border-bottom:1px solid #f5f5f5; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.form-row label { font-size:13px; color:#444; min-width:150px; flex-shrink:0; }
+.form-row input,.form-row select { padding:8px 12px; border:1px solid #e0e0e0; border-radius:8px; font-size:13px; flex:1; min-width:80px; max-width:200px; background:#fff8e1; line-height:44px; height:44px; }
+.form-row input:focus,.form-row select:focus { outline:none; border-color:#3b82f6; }
+.form-row .unit { font-size:12px; color:#888; }
+.yesno { display:flex; gap:8px; }
+.yesno span { padding:4px 16px; border-radius:16px; font-size:13px; cursor:pointer; border:1px solid #ddd; color:#666; }
+.yesno span.sel-yes { background:linear-gradient(135deg,#92400e,#d97706); color:white; border-color:#3b82f6; }
+.yesno span.sel-no { background:#e8ecf1; color:#999; border-color:#ddd; }
+.fixed-bottom { position:sticky; bottom:0; background:white; padding:12px 16px; display:flex; gap:10px; box-shadow:0 -2px 8px rgba(0,0,0,0.06); z-index:10; }
+.fixed-bottom button { flex:1; padding:12px; border-radius:10px; font-size:14px; font-weight:600; border:none; cursor:pointer; }
+.btn-primary { background:linear-gradient(135deg,#92400e,#d97706); color:white; }
+.btn-primary:hover { opacity:0.9; }
+.btn-secondary { background:#e8ecf1; color:#555; }
+
+.result-summary { background:linear-gradient(135deg,#92400e,#d97706); color:white; border-radius:16px; padding:28px 20px; text-align:center; margin-bottom:16px; }
+.result-summary .row { display:flex; justify-content:space-around; margin-top:12px; flex-wrap:wrap; gap:8px; }
+.result-summary .item { flex:1; min-width:100px; }
+.result-summary .item .label { font-size:11px; opacity:0.85; }
+.result-summary .item .val { font-size:22px; font-weight:800; margin:4px 0; }
+.result-summary .item .sub { font-size:12px; opacity:0.85; }
+
+.result-card { background:white; border-radius:12px; padding:16px; margin-bottom:8px; box-shadow:0 1px 3px rgba(0,0,0,0.06); }
+.result-card h3 { font-size:14px; color:#b45309; margin-bottom:8px; }
+.result-row { display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid #f5f5f5; font-size:13px; }
+.result-row:last-child { border-bottom:none; }
+.result-row .label { color:#555; }
+.result-row .val { font-weight:600; }
+.result-row.total { border-top:2px solid #b45309; padding-top:8px; margin-top:4px; font-weight:700; }
+.result-row.total .val { color:#b45309; font-size:16px; }
+.result-green { color:#16a34a; }
+.result-red { color:#dc2626; }
+
+.member-banner { background:linear-gradient(135deg,#0f0c29,#302b63,#24243e); border-radius:12px; padding:20px; text-align:center; margin-top:16px; }
+.member-banner h3 { font-size:15px; color:white; margin-bottom:6px; }
+.member-banner p { font-size:12px; color:rgba(255,255,255,0.85); line-height:1.6; }
+.member-banner .btn { display:inline-block; background:white; color:#b45309; padding:8px 24px; border-radius:20px; text-decoration:none; font-size:13px; font-weight:600; margin-top:8px; }
+
+.scenario-grid { display:flex; gap:8px; }
+.scenario-btn { flex:1; padding:10px; border-radius:8px; font-size:13px; font-weight:600; border:2px solid #ddd; background:white; color:#888; cursor:pointer; text-align:center; transition:all .2s; }
+.scenario-btn.active { border-color:#3b82f6; color:#b45309; background:#eef2ff; }
+
+/* 纳税人类型选项卡 */
+.taxpayer-tabs { display:flex; gap:0; background:#f5f5f5; border-radius:10px; padding:3px; flex:1; max-width:280px; }
+.taxpayer-tab { flex:1; padding:8px 0; border-radius:8px; font-size:13px; font-weight:600; text-align:center; cursor:pointer; color:#888; transition:all .2s; border:none; background:transparent; }
+.taxpayer-tab.active { background:white; color:#b45309; box-shadow:0 1px 3px rgba(0,0,0,0.1); }
+
+.help-card { background:white; border-radius:12px; padding:20px; margin-bottom:12px; box-shadow:0 1px 3px rgba(0,0,0,0.06); }
+.help-card h3 { font-size:15px; margin-bottom:8px; color:#b45309; }
+.help-card p,.help-card li { font-size:13px; color:#555; line-height:1.8; }
+
+@media (max-width:480px){.result-summary .row{flex-direction:column;gap:4px}}
+
+/* ===== 打印/PDF样式 ===== */
+@media print {
+  body { background:white !important; padding:0 !important; margin:0 !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .fixed-bottom, .no-print, .marketing, [class*="返回"], footer, .footer, #返回, .return-bar, .bottom-bar { display:none !important; }
+  .header { background:linear-gradient(135deg,#0c1445,#1a3a6b) !important; color:white !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; padding:20px 16px !important; }
+  .card, .dim-card, .check-item, .result-card { break-inside:avoid; page-break-inside:avoid; border:1px solid #ddd !important; box-shadow:none !important; }
+  .score-card, .result-summary { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .tabs { display:none !important; }
+  .panel { display:block !important; padding:10px !important; }
+  .dim-grid { display:grid !important; grid-template-columns:1fr 1fr !important; gap:8px !important; }
+  .form-row { padding:6px 10px !important; }
+  a[href]:after { content:none !important; }
+}
+
+.pdf-btn { background:linear-gradient(135deg,#b8860b,#d4a843) !important; }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>🧮 企业利润与税负测算器</h1>
+  <p>收入→成本→利润→税负 · 一键算清</p>
+  <div class="badge">您身边的财税专家 · 洪淳宇</div>
+</div>
+<div class="tabs">
+  <div class="tab active" data-tab="input" onclick="st('input')">📝 填数据</div>
+  <div class="tab" data-tab="report" onclick="st('report')">📊 测算报告</div>
+  <div class="tab" data-tab="help" onclick="st('help')">💡 说明</div>
+</div>
+
+<div class="panel active" id="panel-input">
+  <div class="card">
+    <div class="card-title">📋 基础设定</div>
+    <div class="form-row">
+      <label>企业名称</label>
+      <input id="compName" placeholder="输入企业名称" value="示例企业">
+    </div>
+    <div class="form-row">
+      <label>纳税人类型</label>
+      <div class="taxpayer-tabs">
+        <div class="taxpayer-tab active" data-type="general" onclick="setTaxpayer(this)">一般纳税人</div>
+        <div class="taxpayer-tab" data-type="small" onclick="setTaxpayer(this)">小规模纳税人</div>
+      </div>
+    </div>
+    <div class="form-row">
+      <label>所属行业</label>
+      <select id="industry">
+        <option value="manufacturing">制造业</option>
+        <option value="wholesale">批发零售业</option>
+        <option value="transport">交通运输业</option>
+        <option value="construction">建筑业</option>
+        <option value="realestate">房地产业</option>
+        <option value="finance">金融保险业</option>
+        <option value="hospitality">住宿餐饮业</option>
+        <option value="it">信息技术服务业</option>
+        <option value="leasing">租赁和商务服务业</option>
+        <option value="education">教育/医疗/文化体育</option>
+        <option value="agriculture">农林牧渔业</option>
+        <option value="science">科学研究和技术服务业</option>
+        <option value="services">居民服务修理和其他服务业</option>
+        <option value="other" selected>综合/其他</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <label>所得税征收方式</label>
+      <select id="incomeTaxMethod">
+        <option value="audit">查账征收</option>
+        <option value="deemed">核定征收</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">💰 经营预测数据</div>
+    <div class="form-row">
+      <label>预计年营业收入（万元）</label>
+      <input id="revenue" type="number" placeholder="如：500" value="500">
+    </div>
+    <div class="form-row">
+      <label>预计年营业成本（万元）</label>
+      <input id="cost" type="number" placeholder="如：300" value="300">
+      <div class="unit">含采购、原材料等</div>
+    </div>
+    <div class="form-row">
+      <label>预计年费用合计（万元）</label>
+      <input id="expense" type="number" placeholder="如：80" value="80">
+      <div class="unit">工资、租金、办公等</div>
+    </div>
+    <div class="form-row">
+      <label>可抵扣进项税额（万元）</label>
+      <input id="inputTax" type="number" placeholder="如：30" value="30">
+      <div class="unit">增值税专用发票金额</div>
+    </div>
+    <div class="form-row">
+      <label>员工人数</label>
+      <input id="staff" type="number" placeholder="如：20" value="20">
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🎯 场景模拟</div>
+    <div class="form-row" style="flex-direction:column;align-items:stretch;">
+      <label style="margin-bottom:8px">调整幅度模拟</label>
+      <div class="scenario-grid" id="scenarioGrid">
+        <div class="scenario-btn" data-scenario="pessimistic" onclick="setScenario(this)">🔻 保守</div>
+        <div class="scenario-btn active" data-scenario="base" onclick="setScenario(this)">📊 基准</div>
+        <div class="scenario-btn" data-scenario="optimistic" onclick="setScenario(this)">🔺 乐观</div>
+      </div>
+      <div style="font-size:11px;color:#999;margin-top:6px">
+        保守=营收-20% · 基准=当前值 · 乐观=营收+20%
+      </div>
+    </div>
+  </div>
+
+  <div class="fixed-bottom">
+    <button class="btn-primary" onclick="calc()">🧮 开始测算</button>
+    <button class="btn-secondary" onclick="resetAll()">🔄 重置</button>
+  </div>
+</div>
+
+<div class="panel" id="panel-report">
+  <div id="reportContent"></div>
+  <div class="fixed-bottom">
+    <button class="btn-secondary" onclick="st('input')">📝 返回修改</button>
+    <button class="btn-primary" onclick="shareResult()">📤 分享报告</button>
+  </div>
+</div>
+
+<div class="panel" id="panel-help">
+  <div class="help-card">
+    <h3>📖 使用说明</h3>
+    <p>本工具帮助您快速测算企业的预估利润与税负情况。输入经营数据后，系统自动按行业匹配增值税税率，计算增值税、企业所得税、综合税负率等关键指标，并支持三种场景（保守/基准/乐观）对比分析。</p>
+  </div>
+  <div class="help-card">
+    <h3>📊 增值税税率对照</h3>
+    <ul style="font-size:13px;color:#555;line-height:1.8;padding-left:16px">
+      <li><b>一般纳税人</b>：制造业/商贸13% · 建筑/运输/不动产9% · 服务业/科技/其他6%</li>
+      <li><b>小规模纳税人</b>：统一征收率3%（现行政策减按1%）</li>
+      <li><b>企业所得税</b>：查账征收=利润总额×税率，小型微利企业适用优惠税率</li>
+      <li><b>综合税负率</b>=（增值税+所得税+附加税）÷ 营业收入</li>
+    </ul>
+  </div>
+  <div class="help-card">
+    <h3>⚠️ 免责声明</h3>
+    <p>本工具测算结果仅供参考，实际税负因各地政策、税收优惠、税务筹划等因素存在差异，不能替代专业税务顾问的精确计算。</p>
+  </div>
+
+  <div style="text-align:center; padding:16px; margin-top:4px;">
+    <a href="https://sparrow528.github.io/copper-toolbox/" style="display:inline-block; padding:10px 24px; background:#e8eaf6; color:#b45309; border-radius:8px; font-size:13px; font-weight:600; text-decoration:none; border:1px solid #c5cae9;">
+      ← 返回铜级会员入口
+    </a>
+  </div>
+  <div class="member-banner">
+    <h3>🔶 铜级会员专属服务</h3>
+    <p>加入铜级会员（¥2,980/年），享利润税负深度分析报告<br>更有专业财税顾问为您量身定制节税方案</p>
+    <a class="btn" href="https://sparrow528.github.io/tax-membership/" target="_blank">了解会员方案 →</a>
+  </div>
+</div>
+
+<script>
+var multipliers={pessimistic:0.8,base:1,optimistic:1.2};
+
+// 行业对应增值税税率（一般纳税人）
+var vatRateMap={
+  manufacturing:0.13,    // 制造业
+  wholesale:0.13,        // 批发零售
+  transport:0.09,        // 交通运输
+  construction:0.09,     // 建筑业
+  realestate:0.09,       // 房地产业
+  finance:0.06,          // 金融保险
+  hospitality:0.06,      // 住宿餐饮
+  it:0.06,               // 信息技术
+  leasing:0.06,          // 租赁商务
+  education:0.06,        // 教育医疗文体
+  agriculture:0.09,      // 农林牧渔（部分免税，此处按9%）
+  science:0.06,          // 科技服务
+  services:0.06,         // 居民服务
+  other:0.06             // 综合其他
+};
+
+// 行业名称映射
+var industryNames={
+  manufacturing:'制造业',wholesale:'批发零售业',transport:'交通运输业',
+  construction:'建筑业',realestate:'房地产业',finance:'金融保险业',
+  hospitality:'住宿餐饮业',it:'信息技术服务业',leasing:'租赁和商务服务业',
+  education:'教育/医疗/文化体育',agriculture:'农林牧渔业',
+  science:'科学研究和技术服务业',services:'居民服务修理和其他服务业',
+  other:'综合/其他'
+};
+
+function getTaxpayerType(){
+  var el=document.querySelector('.taxpayer-tab.active');
+  return el?el.dataset.type:'general';
+}
+
+function setTaxpayer(el){
+  var btns=document.querySelectorAll('.taxpayer-tab');
+  for(var i=0;i<btns.length;i++) btns[i].className='taxpayer-tab';
+  el.className='taxpayer-tab active';
+}
+
+function setScenario(el){
+  var btns=document.querySelectorAll('.scenario-btn');
+  for(var i=0;i<btns.length;i++) btns[i].className='scenario-btn';
+  el.className='scenario-btn active';
+}
+
+function st(tab){
+  var tabs=document.querySelectorAll('.tab');
+  var panels=document.querySelectorAll('.panel');
+  for(var i=0;i<tabs.length;i++){
+    tabs[i].className='tab'+(tabs[i].dataset.tab===tab?' active':'');
+    panels[i].className='panel'+(panels[i].id==='panel-'+tab?' active':'');
+  }
+}
+
+function getVatRate(taxpayerType, industry){
+  if(taxpayerType==='small') return 0.01; // 小规模减按1%
+  return vatRateMap[industry]||0.06;
+}
+
+function getVatRateDesc(taxpayerType, industry){
+  if(taxpayerType==='small') return '小规模征收率1%（减按）';
+  var rates={0.13:'13%',0.09:'9%',0.06:'6%'};
+  return '一般纳税人'+rates[vatRateMap[industry]]||'6%';
+}
+
+function calc(){
+  var name=document.getElementById('compName').value||'未命名企业';
+  var taxpayerType=getTaxpayerType();
+  var industry=document.getElementById('industry').value;
+  var incomeMethod=document.getElementById('incomeTaxMethod').value;
+  var revenue=parseFloat(document.getElementById('revenue').value)||0;
+  var cost=parseFloat(document.getElementById('cost').value)||0;
+  var expense=parseFloat(document.getElementById('expense').value)||0;
+  var inputTax=parseFloat(document.getElementById('inputTax').value)||0;
+  var staff=parseInt(document.getElementById('staff').value)||1;
+
+  var activeScenario=document.querySelector('.scenario-btn.active');
+  var scenario=activeScenario?activeScenario.dataset.scenario:'base';
+  var mul=multipliers[scenario]||1;
+
+  var scenarios=['pessimistic','base','optimistic'];
+  var scenarioLabels={pessimistic:'🔻 保守',base:'📊 基准',optimistic:'🔺 乐观'};
+  var scenarioDatas=[];
+
+  var vatRate=getVatRate(taxpayerType, industry);
+  var vatDesc=getVatRateDesc(taxpayerType, industry);
+
+  for(var s=0;s<scenarios.length;s++){
+    var sm=multipliers[scenarios[s]];
+    var rev=revenue*sm;
+    var cst=cost*sm;
+    var exp=expense*sm;
+
+    var profit=rev-cst-exp;
+
+    // 增值税（按行业税率）
+    var vat=0;
+    if(taxpayerType==='general'){
+      var outputTax=rev*vatRate;
+      vat=Math.max(0,outputTax-inputTax);
+    } else {
+      vat=rev*vatRate;
+    }
+
+    // 附加税（城建+教育+地方=12%）
+    var surtax=vat*0.12;
+
+    // 企业所得税
+    var incomeTax=0;
+    var prefLabel='';
+    if(incomeMethod==='audit'){
+      if(profit<=0){
+        incomeTax=0;
+        prefLabel='亏损，无需缴纳';
+      } else {
+        if(profit<=300){
+          incomeTax=profit*0.05;
+          prefLabel='小型微利优惠税率5%';
+        } else {
+          incomeTax=300*0.05+(profit-300)*0.25;
+          prefLabel='部分适用小型微利优惠';
+        }
+      }
+    } else {
+      var deemedProfit=rev*0.1;
+      incomeTax=deemedProfit*0.025;
+      prefLabel='核定征收（应税所得率10%）';
+    }
+
+    var totalTax=vat+surtax+incomeTax;
+    var netProfit=profit-incomeTax;
+    var taxRate=rev>0?(totalTax/rev*100):0;
+    var netProfitRate=rev>0?(netProfit/rev*100):0;
+    var perPerson=staff>0?(netProfit/staff):0;
+
+    scenarioDatas.push({
+      label:scenarioLabels[scenarios[s]],
+      rev:rev,cst:cst,exp:exp,profit:profit,
+      vat:vat,surtax:surtax,incomeTax:incomeTax,
+      prefLabel:prefLabel,totalTax:totalTax,
+      netProfit:netProfit,taxRate:taxRate,
+      netProfitRate:netProfitRate,perPerson:perPerson
+    });
+  }
+
+  var cur=scenarioDatas[scenarios.indexOf(scenario)];
+
+  var html='';
+
+  // 总览 - 新增纳税人类型+行业信息
+  html+='<div class="result-summary">';
+  html+='<div style="font-size:14px;margin-bottom:4px">'+name+'</div>';
+  html+='<div style="font-size:11px;opacity:0.85">'+cur.label+' 预测</div>';
+  html+='<div style="font-size:11px;opacity:0.8;margin-top:4px">'+(taxpayerType==='general'?'一般纳税人':'小规模纳税人')+' · '+industryNames[industry]+' · '+vatDesc+'</div>';
+  html+='<div class="row">';
+  html+='<div class="item"><div class="label">营业收入</div><div class="val">'+cur.rev.toFixed(1)+'</div><div class="sub">万元</div></div>';
+  html+='<div class="item"><div class="label">税后净利润</div><div class="val">'+cur.netProfit.toFixed(1)+'</div><div class="sub">万元</div></div>';
+  html+='<div class="item"><div class="label">综合税负</div><div class="val">'+cur.taxRate.toFixed(1)+'%</div><div class="sub">'+cur.totalTax.toFixed(1)+'万元</div></div>';
+  html+='</div></div>';
+
+  // 场景对比表格
+  html+='<div class="result-card"><h3>📊 三场景对比</h3>';
+  html+='<div class="result-row"><span class="label"></span>';
+  for(var s=0;s<scenarioDatas.length;s++){
+    var isCur=scenarios[s]===scenario;
+    html+='<span class="val" style="'+(isCur?'color:#d97706;':'')+'flex:1;text-align:center">'+scenarioDatas[s].label+'</span>';
+  }
+  html+='</div>';
+  var compareRows=[
+    {label:'营业收入（万元）',key:'rev'},
+    {label:'营业成本（万元）',key:'cst'},
+    {label:'费用合计（万元）',key:'exp'},
+    {label:'利润总额（万元）',key:'profit'},
+    {label:'增值税（万元）',key:'vat'},
+    {label:'附加税（万元）',key:'surtax'},
+    {label:'所得税（万元）',key:'incomeTax'},
+    {label:'税后净利润（万元）',key:'netProfit'},
+    {label:'综合税负率',key:'taxRate',suffix:'%'},
+    {label:'净利率',key:'netProfitRate',suffix:'%'},
+    {label:'人均创利（万元）',key:'perPerson'}
+  ];
+  for(var r=0;r<compareRows.length;r++){
+    var row=compareRows[r];
+    var vals='';
+    for(var s=0;s<scenarioDatas.length;s++){
+      var v=scenarioDatas[s][row.key];
+      var display=row.suffix?v.toFixed(1)+row.suffix:v.toFixed(1);
+      var isCur=scenarios[s]===scenario;
+      vals+='<span style="'+(isCur?'font-weight:700;color:#d97706;':'')+'flex:1;text-align:center">'+display+'</span>';
+    }
+    html+='<div class="result-row"><span class="label">'+row.label+'</span>'+vals+'</div>';
+  }
+  html+='</div>';
+
+  // 税负构成
+  html+='<div class="result-card"><h3>💰 税负构成（'+cur.label+'）</h3>';
+  html+='<div style="font-size:12px;color:#888;margin-bottom:8px">适用税率：'+vatDesc+'</div>';
+  html+='<div class="result-row"><span class="label">增值税</span><span class="val">'+cur.vat.toFixed(1)+' 万元</span></div>';
+  html+='<div class="result-row"><span class="label">附加税（增值税×12%）</span><span class="val">'+cur.surtax.toFixed(1)+' 万元</span></div>';
+  html+='<div class="result-row"><span class="label">企业所得税</span><span class="val">'+cur.incomeTax.toFixed(1)+' 万元 <span style="font-size:11px;color:#999">('+cur.prefLabel+')</span></span></div>';
+  html+='<div class="result-row total"><span class="label">税负合计</span><span class="val">'+cur.totalTax.toFixed(1)+' 万元</span></div>';
+  html+='<div class="result-row"><span class="label">综合税负率</span><span class="val'+(cur.taxRate>15?' result-red':' result-green')+'">'+cur.taxRate.toFixed(1)+'%</span></div>';
+  html+='</div>';
+
+  // 关键指标评价
+  html+='<div class="result-card"><h3>💡 经营建议</h3>';
+  var advice='';
+  if(cur.netProfit<=0) advice='企业处于亏损状态，建议重点控制成本费用，优化业务结构。考虑税收优惠政策减少亏损期间的资金压力。';
+  else if(cur.taxRate>15) advice='综合税负率偏高，建议：① 检查是否充分享受了税收优惠政策 ② 优化进项抵扣管理 ③ 考虑合理的税务筹划方案。';
+  else if(cur.taxRate>8) advice='税负率处于中等水平，建议关注行业优惠政策，如高新技术企业优惠、研发费用加计扣除等。';
+  else advice='综合税负率较低，企业税务规划较为合理。建议持续关注政策变化，保持合规经营。';
+  html+='<p style="font-size:13px;color:#555;line-height:1.8">'+advice+'</p>';
+  if(cur.perPerson>0){
+    html+='<p style="font-size:13px;color:#555;line-height:1.8;margin-top:8px">📊 人均创利：'+cur.perPerson.toFixed(1)+' 万元/人'+(cur.perPerson<5?'（偏低，建议评估人员效率）':'（合理）')+'</p>';
+  }
+  html+='</div>';
+
+  html+='<div class="member-banner"><h3>🔶 加入铜级会员，获取专属节税方案</h3><p>铜级会员享：利润税负深度分析报告 · 专业财税顾问一对一答疑<br>实测贵企综合税负率 '+cur.taxRate.toFixed(1)+'%，让专家帮您优化！</p><a class="btn" href="https://sparrow528.github.io/tax-membership/" target="_blank">了解会员方案 →</a></div>';
+
+  document.getElementById('reportContent').innerHTML=html;
+  st('report');
+}
+
+function shareResult(){
+  var name=document.getElementById('compName').value||'未命名企业';
+  var revenue=parseFloat(document.getElementById('revenue').value)||0;
+  var msg='📊 企业利润与税负测算报告\n\n企业名称：'+name+'\n营业收入：'+revenue+'万元\n\n详细测算结果请查看报告详情。\n\n—— 宇守信咨询 · 洪淳宇\n📞 186-0129-4989';
+  if(navigator.share&&navigator.canShare({text:msg})){
+    navigator.share({title:'企业利润与税负测算报告',text:msg});
+  } else {
+    alert('📱 请截屏保存本页面，即可分享给客户！\n\n'+msg);
+  }
+}
+
+function resetAll(){
+  document.getElementById('compName').value='';
+  document.getElementById('revenue').value='';
+  document.getElementById('cost').value='';
+  document.getElementById('expense').value='';
+  document.getElementById('inputTax').value='';
+  document.getElementById('staff').value='';
+  document.getElementById('industry').selectedIndex=13; // 综合/其他
+  document.getElementById('incomeTaxMethod').selectedIndex=0;
+  // 重置纳税人类型为一般纳税人
+  var tpBtns=document.querySelectorAll('.taxpayer-tab');
+  for(var i=0;i<tpBtns.length;i++){
+    tpBtns[i].className='taxpayer-tab'+(tpBtns[i].dataset.type==='general'?' active':'');
+  }
+  var btns=document.querySelectorAll('.scenario-btn');
+  for(var i=0;i<btns.length;i++){
+    btns[i].className='scenario-btn'+(btns[i].dataset.scenario==='base'?' active':'');
+  }
+}
+
+function downloadPDF(){
+  window.print();
+}
+</script>
+</body>
+</html>
